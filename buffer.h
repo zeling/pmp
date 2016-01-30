@@ -12,9 +12,9 @@ struct buffer {
 
 struct buffer *new_buffer();
 void free_buffer(struct buffer *buffer);
-char *retreive(struct buffer *buffer, size_t size);
+char *retrieve(struct buffer *buffer, size_t size);
 ssize_t read_fd(int fd, struct buffer *buffer);
-static void reset_rp(struct buffer *buffer);
+ssize_t write_fd(int fd, struct buffer *buffer, size_t size);
 void ensure_wsize(struct buffer *buffer, size_t w_size);
 
 #endif

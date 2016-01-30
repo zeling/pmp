@@ -2,17 +2,20 @@
 #include <sys/uio.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "buffer.h"
 
 #define INITIAL_BUF_SIZE 1024
 #define EXTRA_BUF 65536
+
+static void reset_rp(struct buffer *buffer);
 
 struct buffer *new_buffer()
 {
   char *buf = (char *)malloc(INITIAL_BUF_SIZE*sizeof(char));
   struct buffer *buffer = (struct buffer *)malloc(sizeof(struct buffer));
   buffer->rp = buffer->wp = buffer->lo = buf;
-  buffer->hi = buffer->lo + 1024;
+  buffer->hi = buffer->lo + INITIAL_BUF_SIZE;
   return buffer;
 }
 
@@ -22,7 +25,7 @@ void free_buffer(struct buffer *buffer)
   free(buffer);
 }
 
-char *retreive(struct buffer *buffer, size_t size)
+char *retrieve(struct buffer *buffer, size_t size)
 {
   char *t = buffer->rp + size;
   if (buffer->hi > t) {
@@ -85,4 +88,19 @@ void ensure_wsize(struct buffer *buffer, size_t w_size)
     buffer->rp = buf + rp_offset;
     buffer->wp = buf + wp_offset;
   }
+}
+
+ssize_t write_fd(int fd, struct buffer *buffer, size_t size)
+{
+  int n, ns = size;
+  do {
+    n = write(fd, buffer->rp, size);
+    if (n < 0) {
+      perror("write");
+      return n;
+    }
+    retrieve(buffer, n);
+    ns -= n;
+  } while (ns > 0);
+  return size;
 }

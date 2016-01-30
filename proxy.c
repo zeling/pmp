@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "buffer.h"
 #include "session.h"
 
 #define MAXLINE 8192
@@ -53,7 +54,7 @@ struct context {
              write, otherwise its the
              descriptor of the session */
   struct proxy_session *session;
-  char *buf;
+  struct buffer *buf;
 };
 
 struct data_w {
@@ -119,8 +120,7 @@ int main(int argc, char **argv)
   epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &ev);
   int ev_num;
   int size;
-  char *buf, *rp;
-  //char buf[MAXLINE], *rp;
+  struct buffer *buf = new_buffer();
   struct proxy_session *session;
   struct context* context;
   while (1) {
@@ -150,12 +150,12 @@ int main(int argc, char **argv)
             sockfd = session->sockfds[0];
             /* We got here for the first time */
             char method[10], url[MAXLINE], version[10];
-            buf = malloc(4096);
-            char *rp = buf;
+            size = 0;
             do {
-              n = read(sockfd, rp, MAXLINE);
+              // n = read(sockfd, rp, MAXLINE);
+              n = read_fd(sockfd, buf);
               if (n < 0) {
-                perror("read");
+                perror("read_fd");
                 if (errno == ECONNRESET) {
                   epoll_ctl(epollfd, EPOLL_CTL_DEL, sockfd, NULL);
                   epoll_ctl(epollfd, EPOLL_CTL_DEL,
@@ -165,9 +165,8 @@ int main(int argc, char **argv)
                 }
                 goto cleanup;
               }
-              rp += n;
-            } while (sscanf(buf, "%s %s %s", method, url, version) != 3);
-            size = rp - buf;
+              size += n;
+            } while (sscanf(buf->rp, "%s %s %s", method, url, version) != 3);
             char hostname[MAXLINE], pathname[MAXLINE];
             int port;
             parse_uri(url, hostname, pathname, &port);
@@ -206,12 +205,9 @@ int main(int argc, char **argv)
             ev.events = EPOLLIN;
             ev.data.ptr = context;
             epoll_ctl(epollfd, EPOLL_CTL_ADD, req, &ev);
-            rp = buf;
-            do {
-              n = write(req , rp, size);
-              size -= n;
-              rp += n;
-            } while (size > 0);
+            if (write_fd(req, buf, size) < 0) {
+              perror("write_fd");
+            }
           } else {
             /* the session is already created */
             splice(session->sockfds[0], NULL, session->pipefds[1], NULL, 65535, SPLICE_F_MORE | SPLICE_F_NONBLOCK);
@@ -224,19 +220,10 @@ int main(int argc, char **argv)
       } else if (events[i].events & EPOLLOUT) {
         context = (struct context *)events[i].data.ptr;
         session = context->session;
-        buf = context->buf;
-        if (buf != NULL) {
-          size = context->desc;
-          rp = buf;
-          do {
-            n = write(session->sockfds[1], rp, size);
-            size -= n;
-            rp += n;
-          } while (size > 0);
+        if (write_fd(session->sockfds[1], context->buf, context->desc) < 0) {
+          perror("write_fd");
         }
         context->desc = 1;
-        free(buf);
-        context->buf = NULL;
         ev.events = EPOLLIN;
         ev.data.ptr = context;
         epoll_ctl(epollfd, EPOLL_CTL_MOD, session->sockfds[1], &ev);
