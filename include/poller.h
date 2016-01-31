@@ -9,20 +9,19 @@ typedef void (*callback)(struct handler *this);
 
 
 struct handler {
-  callback cb;
+  callback handle;
   void *closure;
 };
 
 struct epoll_desc {
   int epollfd;
-  struct handler handlers[12];
+  int listenfd;
   struct epoll_event events[POLLER_MAX_EVENTS];
 };
 
 
-void poll_loop(int epollfd, struct epoll_event *events,
-               callback rc, callback wc);
-
 void epoll_loop(struct epoll_desc *desc);
+
+void register_handler(int epollfd, int sockfd, int events, struct handler *handler);
 
 #endif

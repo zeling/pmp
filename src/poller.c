@@ -1,23 +1,48 @@
 #include <sys/epoll.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 #include "poller.h"
 
-void poll_loop(int epollfd, struct epoll_event *events,
-               callback rc, callback wc)
+static void accept_handler(struct handler *this);
+
+void epoll_loop(struct epoll_desc *desc)
 {
-  while (1) {
-    int i, ev_num = epoll_wait(epollfd, events,
-                               POLLER_MAX_EVENTS, -1);
-    for (i = 0; i < ev_num; i++) {
-      if (events[i].events & EPOLLIN) {
-        if (rc) rc(&events[i]);
-      } else if (events[i].events & EPOLLOUT) {
-        if (wc) wc(&events[i]);
+  struct epoll_event ev;
+  assert(desc->listenfd > 0);
+
+  desc->epollfd = epoll_create1(0);
+  if (desc->epollfd < 0) {
+    perror("epoll_create1");
+    exit(EXIT_FAILURE);
+  }
+
+
+  while(1) {
+    int ev_num = epoll_wait(desc->epollfd, desc->events, POLLER_MAX_EVENTS, POLLER_TIMEOUT);
+
+    for (int i = 0; i != ev_num; ++i) {
+      if (desc->events[i].events & EPOLLRDHUP) {
+        /* peer shutdown */
       }
+      struct handler *handler = (struct handler *)desc->events[i].data.ptr;
+      assert(handler != NULL);
+      handler->handle(handler);
     }
+
   }
 }
 
 
-void epoll_loop(struct epoll_desc *desc)
+static void accept_handler(struct handler *this)
 {
+  struct epoll_desc *desc = (struct epoll_desc *)this->closure;
+}
+
+void register_handler(int epollfd, int sockfd, int events, struct handler *handler)
+{
+  struct epoll_event ev;
+  ev.data.ptr = handler;
+  ev.events = events;
+  epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &ev);
 }
