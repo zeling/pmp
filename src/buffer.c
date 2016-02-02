@@ -10,12 +10,12 @@
 
 static void reset_rp(struct buffer *buffer);
 
-struct buffer *new_buffer()
+struct buffer *new_buffer(size_t size)
 {
-  char *buf = (char *)malloc(INITIAL_BUF_SIZE*sizeof(char));
+  char *buf = (char *)malloc(size*sizeof(char));
   struct buffer *buffer = (struct buffer *)malloc(sizeof(struct buffer));
   buffer->rp = buffer->wp = buffer->lo = buf;
-  buffer->hi = buffer->lo + INITIAL_BUF_SIZE;
+  buffer->hi = buffer->lo + size;
   return buffer;
 }
 
@@ -56,6 +56,7 @@ ssize_t read_fd(int fd, struct buffer *buffer)
     buffer->wp = buffer->hi;
     ensure_wsize(buffer, bytes_to_copy);
     memcpy(buffer->wp, buf, bytes_to_copy);
+    buffer->wp += bytes_to_copy;
   }
   return ret;
 }

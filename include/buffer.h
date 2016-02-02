@@ -10,7 +10,7 @@ struct buffer {
                which is writable; */
 };
 
-struct buffer *new_buffer();
+struct buffer *new_buffer(size_t size);
 void free_buffer(struct buffer *buffer);
 char *retrieve(struct buffer *buffer, size_t size);
 ssize_t read_fd(int fd, struct buffer *buffer);

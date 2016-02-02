@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &ev);
   int ev_num;
   int size;
-  struct buffer *buf = new_buffer();
+  struct buffer *buf = new_buffer(1024);
   struct proxy_session *session;
   struct context* context;
   while (1) {
