@@ -29,7 +29,6 @@ void epoll_loop(struct epoll_desc *desc)
       assert(handler != NULL);
       handler->handle(handler);
     }
-
   }
 }
 
@@ -45,4 +44,10 @@ void register_handler(int epollfd, int sockfd, int events, struct handler *handl
   ev.data.ptr = handler;
   ev.events = events;
   epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &ev);
+}
+
+void remove_handler(int epollfd, int sockfd)
+{
+  /* FIXME: This will cause potential memory leak. Perhaps we finally still need one eventloop. */
+  epoll_ctl(epollfd, EPOLL_CTL_DEL, sockfd, NULL);
 }
