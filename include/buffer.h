@@ -1,13 +1,13 @@
 #ifndef _BUFFER_H
 #define _BUFFER_H
 
+#include <stdint.h>
+
 struct buffer {
-  char *lo;
-  char *hi;
-  char *rp; /* point to the memory
-               which is readable */
-  char *wp; /* point to the memory
-               which is writable; */
+    uint8_t *hi;
+    uint8_t *rp; /* point to the memory which is readable */
+    uint8_t *wp; /* point to the memory which is writable; */
+    uint8_t lo[0];
 };
 
 struct buffer *new_buffer(size_t size);

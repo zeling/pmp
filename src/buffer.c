@@ -12,10 +12,8 @@ static void reset_rp(struct buffer *buffer);
 
 struct buffer *new_buffer(size_t size)
 {
-  char *buf = (char *)malloc(size*sizeof(char));
-  struct buffer *buffer = (struct buffer *)malloc(sizeof(struct buffer));
-  buffer->rp = buffer->wp = buffer->lo = buf;
-  buffer->hi = buffer->lo + size;
+  char *buffer = malloc(sizeof(struct buffer) + size);
+  memset(buffer, 0, sizeof(struct buffer));
   return buffer;
 }
 
