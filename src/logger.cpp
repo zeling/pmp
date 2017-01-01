@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 
 #include "logger.h"
 
@@ -16,7 +17,7 @@ namespace pmp {
         };
 
         struct stdout_log_policy;
-        typedef logger<stdout_log_policy> stdout_logger;
+        typedef log_entry<stdout_log_policy> stdout_logger_entry;
 
 
         struct stdout_log_policy {
@@ -26,18 +27,46 @@ namespace pmp {
             }
         };
 
+        struct file_log_policy;
+        typedef log_entry<file_log_policy> file_logger_entry;
+
+        struct file_log_policy {
+        private:
+            log_level level_;
+            std::ofstream fs_;
+
+        public:
+            file_log_policy(const char *filename, log_level level = LOG_INFO):
+                    level_(level),
+                    fs_(filename, std::ios_base::out | std::ios_base::app) {}
+            file_log_policy(const std::string &filename, log_level level = LOG_INFO):
+                    level_(level),
+                    fs_(filename, std::ios_base::out | std::ios_base::app) {}
+            file_log_policy(const file_log_policy &rhs) = delete;
+            file_log_policy(file_log_policy &&rhs) = delete;
+            log_level level() { return level_; }
+            void set_level(log_level level) { level_ = level; }
+            void log_write(log_level level, const std::string &message) {
+                if (level >= level_)
+                    fs_ << message << std::endl;
+            }
+        };
 
 
     }
 
 }
 
-#define LOG(level) (pmp::logging::stdout_logger().stream(level))
+#define LOG(level) (pmp::logging::stdout_logger_entry(LOG_##level).stream())
+#define FLOG(level, filename) (pmp::logging::file_logger_entry(LOG_##level, #filename).stream())
 
 int main(void) {
     using namespace pmp::logging;
-    LOG(LOG_DEBUG) << "hello, this is a debug message";
-    LOG(LOG_INFO) << "hello, this is a info message";
-    LOG(LOG_FATAL) << "hello, this is a fatal message";
+    FLOG(DEBUG, 1.log) << "hello, this is a debug message";
+    FLOG(INFO, 1.log) << "hello, this is a debug message";
+    FLOG(FATAL, 1.log) << "hello, this is a debug message";
+    LOG(DEBUG) << "hello, this is a debug message";
+    LOG(INFO) << "hello, this is a info message";
+    LOG(FATAL) << "hello, this is a fatal message";
 
 }

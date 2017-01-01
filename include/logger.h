@@ -35,7 +35,7 @@ namespace pmp {
 
 
         template <typename LogPolicy>
-        struct logger: public LogPolicy {
+        struct log_entry: public LogPolicy {
         private:
             log_level level_;
             std::ostringstream os_;
@@ -51,19 +51,20 @@ namespace pmp {
             }
 
         public:
-            logger(): level_(LOG_INFO) {}
-            logger(const logger &rhs) = delete;
-            logger(logger &&rhs) = delete;
+            template <typename ...Args>
+            log_entry(log_level level, Args ...args):
+                    level_(level), LogPolicy(std::forward<Args ...>(args) ...) {}
+            log_entry(const log_entry &rhs) = delete;
+            log_entry(log_entry &&rhs) = delete;
 
             log_level level() { return level_; }
 
-            std::ostringstream& stream(log_level level) {
-                level_ = level;
-                os_ << '[' << get_time() << ']' << '\t' << get_name(level) << '\t';
+            std::ostringstream& stream() {
+                os_ << '[' << get_time() << ']' << '\t' << get_name(level_) << '\t';
                 return os_;
             }
 
-            ~logger() {
+            ~log_entry() {
                 this->log_write(level_, os_.str());
             }
 

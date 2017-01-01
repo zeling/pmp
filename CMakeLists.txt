@@ -10,7 +10,8 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2 -Wall")
 include_directories(include)
 
 file(GLOB SOURCES "src/*.c")
-add_executable(proxy ${SOURCES} src/logger.cpp)
+add_executable(proxy ${SOURCES})
+add_executable(logger src/logger.cpp)
 
 ##file(GLOB TESTS "test/*.c")
 ##foreach(TEST ${TESTS})
